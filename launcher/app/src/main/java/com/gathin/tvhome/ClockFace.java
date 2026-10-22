@@ -26,6 +26,8 @@ final class ClockFace extends View {
 
     private static final float RIM = 98.4f, FACE = 92f;
     private static final int HAND = 0xFFC1C2C4, SECOND = 0xFFDA9835, TICK = 0xFF808185;
+    /** The colours now drawn with; night mode (config night_mode) dims them, see {@link #setNight}. */
+    private int hand = HAND, secondHand = SECOND, tickMark = TICK;
 
     private final Paint hands = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -68,6 +70,17 @@ final class ClockFace extends View {
             invalidate();
         });
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+    }
+
+    /**
+     * Night mode (config night_mode): dimmer hands and hour marks, for a dark room. The dial
+     * itself is already near-black, so only what is drawn over it changes.
+     */
+    void setNight(boolean night) {
+        hand = night ? 0xFF7A7B7E : HAND;
+        secondHand = night ? 0xFFA8742B : SECOND;
+        tickMark = night ? 0xFF4C4E52 : TICK;
+        dial = null;   // the hour marks are drawn into the dial's bitmap
     }
 
     /** Sizes the clock so its rim is {@code rimRadius} pixels across from the centre. */
@@ -120,10 +133,10 @@ final class ClockFace extends View {
         now.setTimeInMillis(System.currentTimeMillis());
         float minute = now.get(Calendar.MINUTE) + now.get(Calendar.SECOND) / 60f;
         float hour = now.get(Calendar.HOUR) + minute / 60f;
-        hands.setColor(HAND);
+        hands.setColor(hand);
         hand(canvas, c, hour * 30f, 50f, 0f, 5f);
         hand(canvas, c, minute * 6f, 72f, 0f, 4f);
-        hands.setColor(SECOND);
+        hands.setColor(secondHand);
         hand(canvas, c, secondAngle, 80f, 16f, 2f);
         hands.setStyle(Paint.Style.FILL);
         canvas.drawCircle(c, c, 5f * unit, hands);
@@ -181,7 +194,7 @@ final class ClockFace extends View {
         p.setShader(null);
 
         // Hour marks at twelve, three, six and nine.
-        p.setColor(TICK);
+        p.setColor(tickMark);
         p.setStrokeWidth(2f * unit);
         p.setStrokeCap(Paint.Cap.ROUND);
         float in = 65f * unit, out = 79f * unit;

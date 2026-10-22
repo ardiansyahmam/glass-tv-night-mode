@@ -146,6 +146,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean moduleCards;
     /** Calmer motion for weak GPUs (config.xml, reduced_motion): stiff spring, short fades, no replay. */
     private boolean reducedMotion;
+    /** Dark glass for a dark room (config.xml, night_mode): dark veil, softer rims, dimmer picture and glow. */
+    private boolean nightMode;
     /** hidden_apps as the adapter sees them (config.xml or a theme's config.json): a hidden app gets no card either. */
     private Set<String> hiddenApps = Collections.emptySet();
     private List<Cards.Card> cards = Collections.emptyList();
@@ -246,6 +248,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Config cfg = Config.load(this);
         COLUMNS = cfg.columns;
         reducedMotion = cfg.reducedMotion;
+        nightMode = cfg.nightMode;
         liveTvPkg = cfg.liveTvPackage;
         liveTvAction = cfg.liveTvAction;
         inputAction = cfg.inputAction;
@@ -330,7 +333,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         });
         grid.setHasFixedSize(true);
         grid.setItemAnimator(null);
-        DockDecoration tray = new DockDecoration(COLUMNS, density);
+        DockDecoration tray = new DockDecoration(COLUMNS, density, nightMode);
         grid.addItemDecoration(tray);
         // The top-right buttons line up with the dock, which is only known once the tiles are laid out.
         grid.getViewTreeObserver().addOnGlobalLayoutListener(this::alignTopButtons);
@@ -348,7 +351,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         glider.addCompanion(grid, tray.area);
         for (int id : new int[]{R.id.btnInputs, R.id.btnWifi, R.id.btnSettings}) {
             View pill = findViewById(id);
-            pill.setBackground(new GlassDrawable(pill, 21 * density, density, glider));
+            pill.setBackground(new GlassDrawable(pill, 21 * density, density, glider, nightMode));
             glider.addCompanion(pill);
             Backdrop.watch(pill);
             pill.setOnFocusChangeListener((v, has) -> {
@@ -502,6 +505,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
+    /**
+     * How far the picture behind everything is dimmed, as a MULTIPLY colour (0 for none). Places
+     * photos always are, so the clock, names and tiles stay readable; night mode dims any picture
+     * further, to night brightness. The wallpaper view and the glass's blurred copy both use this,
+     * so the glass keeps matching what lies around it.
+     */
+    private int wallpaperDim() {
+        if (nightMode) return 0xFF4D4D4D;
+        return placesMode ? 0xFF7A7A7A : 0;
+    }
+
     /** Puts a picture behind everything, cross-fading from the previous one when asked. */
     private void setWallpaper(android.graphics.Bitmap bmp, boolean fade) {
         setWallpaper(bmp, fade, null);
@@ -514,7 +528,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             wallView = new android.widget.ImageView(this);
             wallView.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
             // Photos are bright: dim them so the clock, names and tiles stay readable.
-            if (placesMode) wallView.setColorFilter(0xFF7A7A7A, android.graphics.PorterDuff.Mode.MULTIPLY);
+            int dim = wallpaperDim();
+            if (dim != 0) wallView.setColorFilter(dim, android.graphics.PorterDuff.Mode.MULTIPLY);
             root.addView(wallView, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
         android.graphics.Bitmap old = wallBitmap;
@@ -550,7 +565,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Hands the picture now on screen to the glass, which blurs it once, off the main thread. */
     private void blurBackdrop(android.graphics.Bitmap bmp) {
         android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
-        Backdrop.update(bmp, dm.widthPixels, dm.heightPixels, placesMode ? 0xFF7A7A7A : 0, wallDecoder, handler);
+        Backdrop.update(bmp, dm.widthPixels, dm.heightPixels, wallpaperDim(), wallDecoder, handler);
     }
 
     /** Shows the next picture from the wallpapers folder; the position survives restarts. */
@@ -572,7 +587,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // not wait for its blur: Home is held for it, and the glass catches up a moment later.
             android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
             android.graphics.Bitmap blur = firstPicture ? null
-                    : Backdrop.blur(bmp, dm.widthPixels, dm.heightPixels, placesMode ? 0xFF7A7A7A : 0);
+                    : Backdrop.blur(bmp, dm.widthPixels, dm.heightPixels, wallpaperDim());
             handler.post(() -> {
                 if (isDestroyed()) return;
                 setWallpaper(bmp, fade, blur);
@@ -956,7 +971,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * as it arrives, and the dock tray paints it over its own glass.
      */
     private void setUpGlider() {
-        glider = new Glider(this, reducedMotion);
+        glider = new Glider(this, reducedMotion, nightMode);
         // Behind the shelf's text, the pills and the tiles, so it never draws over any of them.
         root.addView(glider, root.indexOfChild(heroShelf), new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -1234,7 +1249,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showAmbient(int color) {
         if (!ambientShown) {
             setAmbient(color);
-            ambient.animate().alpha(1f).setDuration(reducedMotion ? 160 : 600)
+            // Night mode keeps the glow at half strength: a lit room's colour, at night brightness.
+            ambient.animate().alpha(nightMode ? 0.55f : 1f).setDuration(reducedMotion ? 160 : 600)
                     .setUpdateListener(a -> syncGlassGlow()).start();
             ambientShown = true;
         } else if (color != ambientColor) {
@@ -1709,7 +1725,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * the menu is above), or Back, closes it and the shape glides back to the anchor.
      */
     private void showMenu(FrameLayout panel, LinearLayout rows, View anchor, int width, boolean above) {
-        GlassDrawable glass = new GlassDrawable(panel, 20 * density, density, glider, 0.5f, true);
+        GlassDrawable glass = new GlassDrawable(panel, 20 * density, density, glider, 0.5f, true, nightMode);
         panel.setBackground(glass);
         Backdrop.watch(panel);
         glider.addCompanion(panel);
@@ -1835,7 +1851,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private PopupWindow glassPopup(View panel, int width) {
         // The same glass as the pills and the tray: what is behind it, softened, with a shining edge.
-        panel.setBackground(new GlassDrawable(panel, 20 * density, density, null, 0.5f));
+        panel.setBackground(new GlassDrawable(panel, 20 * density, density, null, 0.5f, nightMode));
         Backdrop.watch(panel);
         final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));   // needed for Back to dismiss

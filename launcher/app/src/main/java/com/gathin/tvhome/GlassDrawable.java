@@ -37,21 +37,33 @@ final class GlassDrawable extends Drawable {
 
     /** {@code reach} as in GlassRim: larger panels keep the shine to the corners. */
     GlassDrawable(View owner, float radius, float density, Glider highlight, float reach) {
-        this(owner, radius, density, highlight, reach, false);
+        this(owner, radius, density, highlight, reach, false, false);
+    }
+
+    /** Night mode (config night_mode): the same glass with a dark veil and a softer shine. */
+    GlassDrawable(View owner, float radius, float density, Glider highlight, boolean night) {
+        this(owner, radius, density, highlight, 1f, false, night);
+    }
+
+    /** Night mode, with {@code reach} as above. */
+    GlassDrawable(View owner, float radius, float density, Glider highlight, float reach, boolean night) {
+        this(owner, radius, density, highlight, reach, false, night);
     }
 
     /**
      * With {@code paintsShape}, the focus shape is painted over this glass and under what the panel
      * holds, as the dock's tray paints it: the shape glides in from outside the panel and the glass
-     * never hides it.
+     * never hides it. With {@code night}, the veil is black instead of white and the rim's shine is
+     * dimmer, so the glass sits at night brightness over the dimmed wallpaper.
      */
-    GlassDrawable(View owner, float radius, float density, Glider highlight, float reach, boolean paintsShape) {
+    GlassDrawable(View owner, float radius, float density, Glider highlight, float reach, boolean paintsShape, boolean night) {
         this.paintsShape = paintsShape;
         this.owner = owner;
         this.highlight = highlight;
         this.radius = radius;
-        veil.setColor(0xFFFFFF | VEIL_ALPHA << 24);
-        rim = new GlassRim(1.5f * density, 0xD9FFFFFF, 0x1AFFFFFF, reach);
+        veil.setColor((night ? 0x000000 : 0xFFFFFF) | VEIL_ALPHA << 24);
+        rim = new GlassRim(1.5f * density,
+                night ? 0x59FFFFFF : 0xD9FFFFFF, night ? 0x0DFFFFFF : 0x1AFFFFFF, reach);
     }
 
     @Override

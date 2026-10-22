@@ -52,6 +52,9 @@ public class ClockDream extends DreamService {
 
         content = findViewById(R.id.dreamContent);
         face = new ClockFace(this);
+        // The launcher's setting, read the same way (config.xml overlaid by a theme's config.json):
+        // night mode dims the clock's hands and marks along with the glass.
+        face.setNight(Config.load(this).nightMode);
         ((ViewGroup) content).addView(face, 0, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         TextClock date = findViewById(R.id.dreamDate);

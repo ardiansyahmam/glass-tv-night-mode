@@ -14,6 +14,7 @@ powershell -ExecutionPolicy Bypass -File tools\theme.ps1 -TvHost 192.168.1.50 th
 |---|---|
 | `default/` | The built-in look written out as JSON, as a starting point for your own |
 | `aurora/` | A dark aurora wallpaper (teal and violet on navy, darker at the bottom) with a matching background colour |
+| `night/` | Night mode: the same glass gone dark — a dark veil, softer edges, the picture dimmed further and a weaker glow, for watching in a dark room |
 | `six-columns/` | Six smaller tiles per row and one grid row visible under the dock |
 
 ## Keys
@@ -33,6 +34,7 @@ is ignored, and a file that doesn't parse is ignored as a whole, so a theme can 
 | `shamsi_date` | bool | Show the Solar Hijri date above the Gregorian one |
 | `module_cards` | bool | Look for module cards and ask about them (`true`); `false` turns the feature off |
 | `reduced_motion` | bool | Calmer motion for weak GPUs: stiff highlight spring, no tile overshoot, short fades, no entrance replay |
+| `night_mode` | bool | Dark glass for a dark room: a dark veil instead of the white one, softer rim shine, the wallpaper dimmed further, a weaker app glow, and dimmer hands on the clock screensaver |
 | `vpn_app` | string | App the network pill opens when a VPN is configured; also shows a red "VPN off" badge while no VPN is up |
 | `show_home_settings_shortcut` | bool | The "Default home" tile, where the TV has a home picker |
 | `show_network_pill` | bool | The Wi-Fi / Ethernet pill in the top bar; `false` hides it |

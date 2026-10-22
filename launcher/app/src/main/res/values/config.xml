@@ -79,4 +79,10 @@
          tiles that zoom without overshoot, shorter fades and no tile entrance when Home comes back. Set it
          here or with "reduced_motion": true in a theme's config.json; false keeps the normal motion. -->
     <bool name="reduced_motion">false</bool>
+
+    <!-- Night mode: the same glass gone dark, for a dark room. true swaps the white veil for a dark
+         one, softens the shining edges, dims the picture behind everything further and weakens the
+         focused app's glow; the clock screensaver's hands and marks dim too. Set it here or with
+         "night_mode": true in a theme's config.json; false keeps the bright glass. -->
+    <bool name="night_mode">false</bool>
 </resources>

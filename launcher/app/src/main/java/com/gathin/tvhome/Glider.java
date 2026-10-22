@@ -95,12 +95,15 @@ final class Glider extends View {
     /** Run once the shape has come to rest after a glide (see {@link #onArrive}). */
     private Runnable arrival;
 
-    Glider(Context context, boolean reducedMotion) {
+    Glider(Context context, boolean reducedMotion, boolean nightMode) {
         super(context);
         this.reducedMotion = reducedMotion;
         float density = context.getResources().getDisplayMetrics().density;
-        veil.setColor(0x14FFFFFF);
-        rim = new GlassRim(1.5f * density, 0xD9FFFFFF, 0x1AFFFFFF);
+        // Night mode (config night_mode): the pane darkens the tile under it instead of lightening
+        // it, and its shine is softer, as on the pills (GlassDrawable).
+        veil.setColor(nightMode ? 0x14000000 : 0x14FFFFFF);
+        rim = new GlassRim(1.5f * density,
+                nightMode ? 0x59FFFFFF : 0xD9FFFFFF, nightMode ? 0x0DFFFFFF : 0x1AFFFFFF);
         shadowBlur = 22f * density;
         shadowDrop = 8f * density;
         Backdrop.watch(this);

@@ -27,12 +27,14 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     /** The tray as last drawn, in the grid's coordinates: where the focus shape shows on it. */
     final RectF area = new RectF();
 
-    DockDecoration(int dockSize, float density) {
+    DockDecoration(int dockSize, float density, boolean nightMode) {
         this.dockSize = dockSize;
         this.density = density;
-        // Same glass as the top-bar pills (GlassDrawable): an even veil and a shining edge.
-        band.setColor(0x12FFFFFF);
-        edge = new GlassRim(1.5f * density, 0xD9FFFFFF, 0x1AFFFFFF, 0.5f);
+        // Same glass as the top-bar pills (GlassDrawable): an even veil and a shining edge. Night
+        // mode (config night_mode) darkens the veil and softens the shine, as on the pills.
+        band.setColor(nightMode ? 0x12000000 : 0x12FFFFFF);
+        edge = new GlassRim(1.5f * density,
+                nightMode ? 0x59FFFFFF : 0xD9FFFFFF, nightMode ? 0x0DFFFFFF : 0x1AFFFFFF, 0.5f);
     }
 
     /** The focus shape: the tray's glass would hide it, so the tray paints it over the glass itself. */
